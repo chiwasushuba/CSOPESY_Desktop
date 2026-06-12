@@ -1,4 +1,5 @@
 #include "Desktop.h"
+#include "TaskManager.h"
 #include <ctime>
 #include <GLFW/glfw3.h>
 
@@ -37,17 +38,50 @@ void Desktop::draw() {
         displaySize.y - buttonSize.y - edgePadding
     );
     ImGui::SetCursorPos(pwrBtnPos);
-
+    
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.15f, 0.15f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.90f, 0.20f, 0.20f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.60f, 0.10f, 0.10f, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-
+    
     if (ImGui::Button("PWR", buttonSize)) {
         GLFWwindow* currentWindow = glfwGetCurrentContext();
         if (currentWindow) {
             glfwSetWindowShouldClose(currentWindow, GLFW_TRUE);
         }
+    }
+
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(3);
+    
+    // TaskManager Button
+    ImVec2 tmBtnPos = ImVec2(
+        pwrBtnPos.x - buttonSize.x*2,
+        pwrBtnPos.y
+    );
+    ImGui::SetCursorPos(tmBtnPos);
+
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.60f, 0.15f, 1.0f));        // Darker yellow
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.90f, 0.75f, 0.20f, 1.0f)); // Bright yellow
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.60f, 0.45f, 0.10f, 1.0f));  // Muted yellow
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+
+    if (ImGui::Button("TM", buttonSize)) {
+        if (tmInstance == nullptr) {
+            tmInstance = new TaskManager();
+            tmInstance->show(); 
+        }
+        else if (tmInstance->isShown() == true) {
+            tmInstance->hide();
+        }
+        else if (tmInstance->isShown() == false) {
+            tmInstance->show();
+        }
+    }
+
+    // Every single frame, if the instance exists and is visible, draw it
+    if (tmInstance && tmInstance->isShown()) { 
+        tmInstance->draw(); 
     }
 
     ImGui::PopStyleVar();
