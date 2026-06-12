@@ -2,11 +2,12 @@
 #include <memory>
 
 // Include Graphics / UI dependencies
-#include "glad/glad.h" // Replace with your chosen OpenGL loader if different
+#define GLAD_GL_IMPLEMENTATION
+#include "glad/gl.h" // Replace with your chosen OpenGL loader if different
 #include "GLFW/glfw3.h"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
 
 // Include your Component 1 files
 #include "Desktop.h"
@@ -36,9 +37,12 @@ int main() {
     glfwSwapInterval(1); // Enable VSync
 
     // Initialize OpenGL function pointers
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "Failed to initialize GLAD" << std::endl;
-        return -1;
+    // if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    //     std::cerr << "Failed to initialize GLAD" << std::endl;
+    //     return -1;
+    // }
+    if (!gladLoadGL(glfwGetProcAddress)) {
+        return -1; 
     }
 
     // Setup Dear ImGui Context
