@@ -124,15 +124,11 @@ void Desktop::drawBackgroundPattern(ImVec2 displaySize) {
 void Desktop::drawClock() {
     auto now = std::chrono::system_clock::now();
     std::time_t time = std::chrono::system_clock::to_time_t(now);
-    std::tm timeinfo;
-#if defined(_WIN32) || defined(_WIN64)
-    localtime_s(&timeinfo, &time);
-#else
-    localtime_r(&time, &timeinfo);
-#endif
-
+    // Use std::localtime which is safe here since this is a single-threaded UI draw call
+    std::tm* timeinfo = std::localtime(&time);
+    if (!timeinfo) return;
     char buffer[64];
-    std::strftime(buffer, sizeof(buffer), "%A, %b %d, %Y | %I:%M:%S %p", &timeinfo);
+    std::strftime(buffer, sizeof(buffer), "%A, %b %d, %Y | %I:%M:%S %p", timeinfo);
 
     ImVec2 textSize = ImGui::CalcTextSize(buffer);
     ImVec2 displaySize = ImGui::GetIO().DisplaySize;
