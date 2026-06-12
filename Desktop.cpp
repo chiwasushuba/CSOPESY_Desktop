@@ -1,10 +1,21 @@
 #include "Desktop.h"
 #include "TaskManager.h"
 #include <ctime>
+#include <string>
 #include <GLFW/glfw3.h>
 
-Desktop::Desktop() : AWindow("Desktop") {
+Desktop::Desktop()
+    : AWindow("Desktop"),
+      tmInstance(nullptr),
+      sysInfoInstance(nullptr),
+      notesInstance(nullptr) {
     this->show(); // desktop shows by default
+}
+
+Desktop::~Desktop() {
+    delete tmInstance;
+    delete sysInfoInstance;
+    delete notesInstance;
 }
 
 void Desktop::draw() {
@@ -30,62 +41,20 @@ void Desktop::draw() {
     // clock widget
     drawClock();
 
-    // PWR Shutdown button
-    ImVec2 buttonSize = ImVec2(70.0f, 35.0f);
-    float edgePadding = 20.0f;
-    ImVec2 pwrBtnPos = ImVec2(
-        displaySize.x - buttonSize.x - edgePadding,
-        displaySize.y - buttonSize.y - edgePadding
-    );
-    ImGui::SetCursorPos(pwrBtnPos);
-    
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.15f, 0.15f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.90f, 0.20f, 0.20f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.60f, 0.10f, 0.10f, 1.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-    
-    if (ImGui::Button("PWR", buttonSize)) {
-        GLFWwindow* currentWindow = glfwGetCurrentContext();
-        if (currentWindow) {
-            glfwSetWindowShouldClose(currentWindow, GLFW_TRUE);
-        }
-    }
-
-    ImGui::PopStyleVar();
-    ImGui::PopStyleColor(3);
-    
-    // TaskManager Button
-    ImVec2 tmBtnPos = ImVec2(
-        pwrBtnPos.x - buttonSize.x*2,
-        pwrBtnPos.y
-    );
-    ImGui::SetCursorPos(tmBtnPos);
-
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.60f, 0.15f, 1.0f));        // Darker yellow
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.90f, 0.75f, 0.20f, 1.0f)); // Bright yellow
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.60f, 0.45f, 0.10f, 1.0f));  // Muted yellow
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-
-    if (ImGui::Button("TM", buttonSize)) {
-        if (tmInstance == nullptr) {
-            tmInstance = new TaskManager();
-            tmInstance->show(); 
-        }
-        else if (tmInstance->isShown() == true) {
-            tmInstance->hide();
-        }
-        else if (tmInstance->isShown() == false) {
-            tmInstance->show();
-        }
-    }
+    drawTaskbar(displaySize);
 
     // Every single frame, if the instance exists and is visible, draw it
     if (tmInstance && tmInstance->isShown()) { 
         tmInstance->draw(); 
     }
 
-    ImGui::PopStyleVar();
-    ImGui::PopStyleColor(3);
+    if (sysInfoInstance && sysInfoInstance->isShown()) {
+        sysInfoInstance->draw();
+    }
+
+    if (notesInstance && notesInstance->isShown()) {
+        notesInstance->draw();
+    }
 
     ImGui::End();
 }
@@ -136,4 +105,102 @@ void Desktop::drawClock() {
 
     ImGui::SetCursorPos(clockPosition);
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 0.9f), "%s", buffer);
+}
+
+void Desktop::drawTaskbar(ImVec2 displaySize) {
+    const float barHeight = 56.0f;
+    const float edgePadding = 10.0f;
+    const ImVec2 buttonSize(56.0f, 36.0f);
+    const float buttonSpacing = 8.0f;
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    const ImVec2 barMin(0.0f, displaySize.y - barHeight);
+    const ImVec2 barMax(displaySize.x, displaySize.y);
+
+    drawList->AddRectFilled(barMin, barMax, IM_COL32(8, 12, 24, 220));
+    drawList->AddLine(ImVec2(0.0f, barMin.y), ImVec2(displaySize.x, barMin.y), IM_COL32(56, 189, 248, 140), 1.5f);
+
+    ImVec2 currentPos(edgePadding, displaySize.y - barHeight + (barHeight - buttonSize.y) * 0.5f);
+
+    ImGui::SetCursorPos(currentPos);
+    ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(21, 94, 117, 255));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(14, 116, 144, 255));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(8, 145, 178, 255));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+    if (ImGui::Button("SYS", buttonSize)) {
+        if (sysInfoInstance == nullptr) {
+            sysInfoInstance = new SystemInfoWindow();
+            sysInfoInstance->show();
+        } else if (sysInfoInstance->isShown()) {
+            sysInfoInstance->hide();
+        } else {
+            sysInfoInstance->show();
+        }
+    }
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(3);
+
+    currentPos.x += buttonSize.x + buttonSpacing;
+    ImGui::SetCursorPos(currentPos);
+    ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(76, 29, 149, 255));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(109, 40, 217, 255));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(124, 58, 237, 255));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+    if (ImGui::Button("NOTE", buttonSize)) {
+        if (notesInstance == nullptr) {
+            notesInstance = new NotesWindow();
+            notesInstance->show();
+        } else if (notesInstance->isShown()) {
+            notesInstance->hide();
+        } else {
+            notesInstance->show();
+        }
+    }
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(3);
+
+    currentPos.x += buttonSize.x + buttonSpacing;
+    ImGui::SetCursorPos(currentPos);
+    ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(180, 120, 24, 255));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(217, 140, 24, 255));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(234, 179, 8, 255));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+    if (ImGui::Button("TM", buttonSize)) {
+        if (tmInstance == nullptr) {
+            tmInstance = new TaskManager();
+            tmInstance->show();
+        } else if (tmInstance->isShown()) {
+            tmInstance->hide();
+        } else {
+            tmInstance->show();
+        }
+    }
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(3);
+
+    std::string runningApps = "Running: Desktop";
+    if (tmInstance && tmInstance->isShown()) runningApps += " | Task Manager";
+    if (sysInfoInstance && sysInfoInstance->isShown()) runningApps += " | System Info";
+    if (notesInstance && notesInstance->isShown()) runningApps += " | Notes";
+
+    ImVec2 runningTextSize = ImGui::CalcTextSize(runningApps.c_str());
+    ImVec2 runningPos(displaySize.x - runningTextSize.x - 120.0f, displaySize.y - barHeight + 19.0f);
+    ImGui::SetCursorPos(runningPos);
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 0.82f), "%s", runningApps.c_str());
+
+    const ImVec2 pwrBtnSize(78.0f, 36.0f);
+    ImVec2 pwrPos(displaySize.x - pwrBtnSize.x - edgePadding, displaySize.y - barHeight + (barHeight - pwrBtnSize.y) * 0.5f);
+    ImGui::SetCursorPos(pwrPos);
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.15f, 0.15f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.90f, 0.20f, 0.20f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.60f, 0.10f, 0.10f, 1.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+    if (ImGui::Button("PWR", pwrBtnSize)) {
+        GLFWwindow* currentWindow = glfwGetCurrentContext();
+        if (currentWindow) {
+            glfwSetWindowShouldClose(currentWindow, GLFW_TRUE);
+        }
+    }
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(3);
 }

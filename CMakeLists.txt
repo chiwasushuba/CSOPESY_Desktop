@@ -20,6 +20,8 @@ set(PROJECT_SOURCES
     main.cpp
     Desktop.cpp
     TaskManager.cpp
+    SystemInfoWindow.cpp
+    NotesWindow.cpp
     
     # Points exactly to the gl.c file inside your local glfw-3.4 folder
     # glfw-3.4/deps/glad/gl.c
